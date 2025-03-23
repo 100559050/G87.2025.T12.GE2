@@ -1,23 +1,31 @@
 """MODULE: transfer_request. Contains the transfer request class"""
+
 import hashlib
 import json
 from datetime import datetime, timezone
 
+
 class TransferRequest:
     """Class representing a transfer request"""
-    def __init__(self,
-                 from_iban: str,
-                 transfer_type: str,
-                 to_iban:str,
-                 transfer_concept:str,
-                 transfer_date:str,
-                 transfer_amount:float):
+
+    def __init__(self, from_iban: str, to_iban: str, transfer_details: dict):
+        """
+        Initializes a new TransferRequest.
+
+        :param from_iban: Sender's IBAN.
+        :param to_iban: Receiver's IBAN.
+        :param transfer_details: Dictionary containing:
+            - transfer_type: str
+            - transfer_concept: str
+            - transfer_date: str
+            - transfer_amount: float
+        """
         self.__from_iban = from_iban
         self.__to_iban = to_iban
-        self.__transfer_type = transfer_type
-        self.__concept = transfer_concept
-        self.__transfer_date = transfer_date
-        self.__transfer_amount = transfer_amount
+        self.__transfer_type = transfer_details.get("transfer_type")
+        self.__transfer_concept = transfer_details.get("transfer_concept")
+        self.__transfer_date = transfer_details.get("transfer_date")
+        self.__transfer_amount = transfer_details.get("transfer_amount")
         justnow = datetime.now(timezone.utc)
         self.__time_stamp = datetime.timestamp(justnow)
 
@@ -25,20 +33,21 @@ class TransferRequest:
         return "Transfer:" + json.dumps(self.__dict__)
 
     def to_json(self):
-        """returns the object information in json format"""
+        """Returns the object information in JSON format."""
         return {
             "from_iban": self.__from_iban,
             "to_iban": self.__to_iban,
             "transfer_type": self.__transfer_type,
             "transfer_amount": self.__transfer_amount,
-            "transfer_concept": self.__concept,
+            "transfer_concept": self.__transfer_concept,
             "transfer_date": self.__transfer_date,
             "time_stamp": self.__time_stamp,
-            "transfer_code": self.transfer_code
+            "transfer_code": self.transfer_code,
         }
+
     @property
     def from_iban(self):
-        """Sender's iban"""
+        """Sender's IBAN"""
         return self.__from_iban
 
     @from_iban.setter
@@ -47,7 +56,7 @@ class TransferRequest:
 
     @property
     def to_iban(self):
-        """receiver's iban"""
+        """Receiver's IBAN"""
         return self.__to_iban
 
     @to_iban.setter
@@ -56,16 +65,18 @@ class TransferRequest:
 
     @property
     def transfer_type(self):
-        """Property representing the type of transfer: REGULAR, INMEDIATE or URGENT """
+        """Property representing the type of transfer: REGULAR, IMMEDIATE or URGENT"""
         return self.__transfer_type
+
     @transfer_type.setter
     def transfer_type(self, value):
         self.__transfer_type = value
 
     @property
     def transfer_amount(self):
-        """Property respresenting the transfer amount"""
+        """Property representing the transfer amount"""
         return self.__transfer_amount
+
     @transfer_amount.setter
     def transfer_amount(self, value):
         self.__transfer_amount = value
@@ -74,16 +85,18 @@ class TransferRequest:
     def transfer_concept(self):
         """Property representing the transfer concept"""
         return self.__transfer_concept
+
     @transfer_concept.setter
     def transfer_concept(self, value):
         self.__transfer_concept = value
 
     @property
-    def transfer_date( self ):
+    def transfer_date(self):
         """Property representing the transfer's date"""
         return self.__transfer_date
+
     @transfer_date.setter
-    def transfer_date( self, value ):
+    def transfer_date(self, value):
         self.__transfer_date = value
 
     @property
@@ -93,5 +106,5 @@ class TransferRequest:
 
     @property
     def transfer_code(self):
-        """Returns the md5 signature (transfer code)"""
+        """Returns the MD5 signature (transfer code)"""
         return hashlib.md5(str(self).encode()).hexdigest()
