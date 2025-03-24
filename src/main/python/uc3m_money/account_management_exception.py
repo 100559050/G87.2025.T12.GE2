@@ -4,7 +4,7 @@ class AccountManagementException(Exception):
     """Personalised exception for Accounts Management"""
     def __init__(self, message):
         self.__message = message
-        super().__init__(self.message)
+        super().__init__(message)
 
     @property
     def message(self):

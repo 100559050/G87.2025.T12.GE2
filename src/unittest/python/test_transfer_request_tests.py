@@ -1,6 +1,7 @@
 """class for testing the regsiter_order method"""
 import unittest
 from uc3m_money import AccountManager
+from uc3m_money import AccountManagementException
 
 class MyTestCase(unittest.TestCase):
     """class for testing the register_order method"""

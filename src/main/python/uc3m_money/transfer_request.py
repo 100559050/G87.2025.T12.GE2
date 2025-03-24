@@ -3,6 +3,7 @@
 import hashlib
 import json
 from datetime import datetime, timezone
+from account_management_exception import AccountManagementException
 
 
 class TransferRequest:
@@ -29,6 +30,9 @@ class TransferRequest:
         justnow = datetime.now(timezone.utc)
         self.__time_stamp = datetime.timestamp(justnow)
 
+        # Run validation
+        self.validate()
+
     def __str__(self):
         return "Transfer:" + json.dumps(self.__dict__)
 
@@ -44,6 +48,63 @@ class TransferRequest:
             "time_stamp": self.__time_stamp,
             "transfer_code": self.transfer_code,
         }
+
+    def validate(self):
+        """Validates all fields of the transfer request."""
+        self._validate_iban(self.__from_iban, "from_iban")
+        self._validate_iban(self.__to_iban, "to_iban")
+        self._validate_transfer_type()
+        self._validate_transfer_concept()
+        self._validate_transfer_date()
+        self._validate_transfer_amount()
+
+    def _validate_iban(self, iban, name):
+        if not isinstance(iban, str):
+            raise AccountManagementException(f"{name} must be a string.")
+        if len(iban) != 24:
+            raise AccountManagementException(f"{name} must be exactly 24 characters.")
+        if not iban.startswith("ES"):
+            raise AccountManagementException(f"{name} must start with 'ES'.")
+
+    def _validate_transfer_type(self):
+        if not isinstance(self.__transfer_type, str):
+            raise AccountManagementException("transfer_type must be a string.")
+        if self.__transfer_type not in ["ORDINARY", "URGENT", "IMMEDIATE"]:
+            raise AccountManagementException("transfer_type must be ORDINARY, URGENT, or IMMEDIATE")
+
+    def _validate_transfer_concept(self):
+        if not isinstance(self.__transfer_concept, str):
+            raise AccountManagementException("transfer_concept must be a string.")
+        concept = self.__transfer_concept.strip()
+        parts = concept.split(" ")
+        if len(parts) != 2:
+            raise AccountManagementException("transfer_concept must contain exactly two words.")
+        if not all(part.isalpha() for part in parts):
+            raise AccountManagementException("transfer_concept must contain only letters.")
+        if not 10 <= len(concept) <= 30:
+            raise AccountManagementException("transfer_concept must be 10 to 30 characters long.")
+
+    def _validate_transfer_date(self):
+        if not isinstance(self.__transfer_date, str):
+            raise AccountManagementException("transfer_date must be a string.")
+        try:
+            day, month, year = map(int, self.__transfer_date.split("/"))
+        except ValueError:
+            raise AccountManagementException("transfer_date must be in DD/MM/YYYY format.")
+        if not 1 <= day <= 31:
+            raise AccountManagementException("Day must be between 1 and 31.")
+        if not 1 <= month <= 12:
+            raise AccountManagementException("Month must be between 1 and 12.")
+        if year != 2024:
+            raise AccountManagementException("Year must be 2024.")
+
+    def _validate_transfer_amount(self):
+        if not isinstance(self.__transfer_amount, float):
+            raise AccountManagementException("transfer_amount must be a float.")
+        if not 10.00 <= self.__transfer_amount <= 10000.00:
+            raise AccountManagementException("transfer_amount must be between 10.00 and 10000.00.")
+        if len(f"{self.__transfer_amount:.2f}".split(".")[1]) > 2:
+            raise AccountManagementException("transfer_amount must have at most 2 decimal places.")
 
     @property
     def from_iban(self):
