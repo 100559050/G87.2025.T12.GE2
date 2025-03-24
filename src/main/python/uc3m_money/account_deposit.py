@@ -23,7 +23,7 @@ class AccountDeposit:
     def to_json(self):
         """returns the object data in json format"""
         return {"alg": self.__alg,
-                "type": self.__type,
+                "typ": self.__type,
                 "to_iban": self.__to_iban,
                 "deposit_amount": self.__deposit_amount,
                 "deposit_date": self.__deposit_date,
