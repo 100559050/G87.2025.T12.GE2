@@ -17,6 +17,7 @@ Test cases cover:
 import os
 import json
 import unittest
+from freezegun import freeze_time
 
 from uc3m_money.transfer_request import TransferRequest
 from uc3m_money.account_management_exception import AccountManagementException
@@ -45,6 +46,7 @@ class TestTransferRequest(unittest.TestCase):
         if os.path.exists(self.test_file):
             os.remove(self.test_file)
 
+    @freeze_time("2025-03-25 12:00:00")
     def test_valid_transfer_request(self):
         """Test that a valid transfer request is created successfully."""
         tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
@@ -60,6 +62,7 @@ class TestTransferRequest(unittest.TestCase):
             "transfer_code",
         }
         self.assertEqual(set(result.keys()), expected_keys)
+        self.assertEqual(result["time_stamp"], 1742904000.0)
         self.assertEqual(len(tr.transfer_code), 32)
         self.assertTrue(str(tr).startswith("Transfer:"))
 
@@ -169,10 +172,10 @@ class TestTransferRequest(unittest.TestCase):
         self.assertIn("transfer_amount must have at most 2 decimal places", str(cm.exception))
 
     # File Saving Tests
+    @freeze_time("2025-03-25 12:00:00")
     def test_save_to_file_success(self):
         """Test that save_to_file correctly writes transfer data to a file."""
         tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
-        # Ensure file does not exist
         if os.path.exists(self.test_file):
             os.remove(self.test_file)
         tr.save_to_file(self.test_file)
@@ -181,6 +184,7 @@ class TestTransferRequest(unittest.TestCase):
         self.assertTrue(len(data) >= 1)
         self.assertEqual(data[0], tr.to_json())
 
+    @freeze_time("2025-03-25 12:00:00")
     def test_duplicate_transfer(self):
         """Test that saving a duplicate transfer raises an exception."""
         tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
