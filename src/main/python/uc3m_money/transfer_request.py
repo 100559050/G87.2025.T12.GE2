@@ -3,7 +3,7 @@
 import hashlib
 import json
 from datetime import datetime, timezone
-from account_management_exception import AccountManagementException
+from uc3m_money.account_management_exception import AccountManagementException
 
 
 class TransferRequest:
@@ -89,14 +89,14 @@ class TransferRequest:
             raise AccountManagementException("transfer_date must be a string.")
         try:
             day, month, year = map(int, self.__transfer_date.split("/"))
-        except ValueError:
-            raise AccountManagementException("transfer_date must be in DD/MM/YYYY format.")
+        except ValueError as exc:
+            raise AccountManagementException("transfer_date must be in DD/MM/YYYY format.") from exc
         if not 1 <= day <= 31:
             raise AccountManagementException("Day must be between 1 and 31.")
         if not 1 <= month <= 12:
             raise AccountManagementException("Month must be between 1 and 12.")
-        if year != 2024:
-            raise AccountManagementException("Year must be 2024.")
+        if not 2025 <= year < 2051:
+            raise AccountManagementException("Year must be between 2025 and 2050.")
 
     def _validate_transfer_amount(self):
         if not isinstance(self.__transfer_amount, float):

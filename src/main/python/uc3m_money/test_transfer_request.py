@@ -3,7 +3,7 @@ This module tests the functionality of the TransferRequest class.
 """
 
 import unittest
-from .transfer_request import TransferRequest
+from uc3m_money.transfer_request import TransferRequest
 
 
 class TestTransferRequest(unittest.TestCase):
