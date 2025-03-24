@@ -104,8 +104,12 @@ class TransferRequest:
             raise AccountManagementException("transfer_amount must be a float.")
         if not 10.00 <= self.__transfer_amount <= 10000.00:
             raise AccountManagementException("transfer_amount must be between 10.00 and 10000.00.")
-        if len(f"{self.__transfer_amount:.2f}".split(".")[1]) > 2:
-            raise AccountManagementException("transfer_amount must have at most 2 decimal places.")
+        str_amount = str(self.__transfer_amount)
+        if "." in str_amount:
+            decimal_part = str_amount.split(".")[1]
+            if len(decimal_part) > 2:
+                raise AccountManagementException(
+                    "transfer_amount must have at most 2 decimal places.")
 
     def save_to_file(self, file_path="transfers.json"):
         """
