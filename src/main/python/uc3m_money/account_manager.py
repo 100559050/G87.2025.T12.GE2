@@ -3,6 +3,7 @@
 import json
 import datetime
 from .account_management_exception import AccountManagementException
+from .transfer_request import TransferRequest
 
 
 class AccountManager:

@@ -1,0 +1,3 @@
+import unittest
+from uc3m_money import AccountManager
+from uc3m_money import AccountManagementException
