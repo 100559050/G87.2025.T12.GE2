@@ -3,8 +3,6 @@
 import json
 import datetime
 from .account_management_exception import AccountManagementException
-from .transfer_request import TransferRequest
-
 
 class AccountManager:
     """Class for providing the methods for managing accounts."""

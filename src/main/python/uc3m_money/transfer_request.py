@@ -129,7 +129,7 @@ class TransferRequest:
                 json.dump(data, f, indent=4)
 
         except Exception as e:
-            raise AccountManagementException(f"Error saving transfer to file: {str(e)}")
+            raise AccountManagementException(f"Error saving transfer to file: {str(e)}") from e
 
     @property
     def from_iban(self):
