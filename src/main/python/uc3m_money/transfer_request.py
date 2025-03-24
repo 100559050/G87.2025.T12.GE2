@@ -1,6 +1,7 @@
 """MODULE: transfer_request. Contains the transfer request class"""
 
 import hashlib
+import os
 import json
 from datetime import datetime, timezone
 from uc3m_money.account_management_exception import AccountManagementException
@@ -105,6 +106,30 @@ class TransferRequest:
             raise AccountManagementException("transfer_amount must be between 10.00 and 10000.00.")
         if len(f"{self.__transfer_amount:.2f}".split(".")[1]) > 2:
             raise AccountManagementException("transfer_amount must have at most 2 decimal places.")
+
+    def save_to_file(self, file_path="transfers.json"):
+        """
+        Saves the transfer request to a JSON file.
+
+        Prevents duplicates and appends new records.
+        """
+        try:
+            data = []
+
+            if os.path.exists(file_path):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+            if any(entry == self.to_json() for entry in data):
+                raise AccountManagementException("Duplicate transfer detected.")
+
+            data.append(self.to_json())
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
+        except Exception as e:
+            raise AccountManagementException(f"Error saving transfer to file: {str(e)}")
 
     @property
     def from_iban(self):

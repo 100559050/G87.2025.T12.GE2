@@ -1,8 +1,11 @@
 """Contains the class OrderShipping"""
 from datetime import datetime, timezone
 import hashlib
+import json
+import os
+from uc3m_money.account_management_exception import AccountManagementException
 
-class AccountDeposit():
+class AccountDeposit:
     """Class representing the information required for shipping of an order"""
 
     def __init__(self,
@@ -15,6 +18,8 @@ class AccountDeposit():
         justnow = datetime.now(timezone.utc)
         self.__deposit_date = datetime.timestamp(justnow)
 
+        self.validate()
+
     def to_json(self):
         """returns the object data in json format"""
         return {"alg": self.__alg,
@@ -23,6 +28,56 @@ class AccountDeposit():
                 "deposit_amount": self.__deposit_amount,
                 "deposit_date": self.__deposit_date,
                 "deposit_signature": self.deposit_signature}
+
+    def validate(self):
+        """Validates to_iban and deposit_amount fields."""
+        # IBAN validation
+        if not isinstance(self.__to_iban, str):
+            raise AccountManagementException("to_iban must be a string.")
+        if len(self.__to_iban) != 24:
+            raise AccountManagementException("to_iban must be exactly 24 characters.")
+        if not self.__to_iban.startswith("ES"):
+            raise AccountManagementException("to_iban must start with 'ES'.")
+
+        # Deposit amount validation
+        if not isinstance(self.__deposit_amount, float):
+            raise AccountManagementException("deposit_amount must be a float.")
+        if not 10.00 <= self.__deposit_amount <= 10000.00:
+            raise AccountManagementException("deposit_amount must be between 10.00 and 10000.00.")
+        if len(f"{self.__deposit_amount:.2f}".split(".")[1]) > 2:
+            raise AccountManagementException("deposit_amount must have at most 2 decimal places.")
+
+    def save_to_file(self, file_path="deposits.json"):
+        """
+        Saves the deposit request to a JSON file.
+
+        If the file exists, it appends the new deposit unless it's a duplicate.
+        If the file doesn't exist, it creates a new one.
+
+        Raises:
+            AccountManagementException: if there's an error saving or duplicate entry.
+        """
+        try:
+            data = []
+
+            # Load existing data if the file exists
+            if os.path.exists(file_path):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+            # Prevent duplicate deposit entries (exact match)
+            if any(entry == self.to_json() for entry in data):
+                raise AccountManagementException("Duplicate deposit entry detected.")
+
+            # Append and write back
+            data.append(self.to_json())
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
+        except Exception as e:
+            raise AccountManagementException(f"Error saving deposit to file: {str(e)}") from e
+
 
     def __signature_string(self):
         """Composes the string to be used for generating the key for the date"""
