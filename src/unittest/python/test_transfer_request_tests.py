@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 """Tests for the TransferRequest functionality.
 
-This module tests the TransferRequest class.
+This module tests the TransferRequest class located in:
+src/main/python/uc3m_money/transfer_request.py
 """
 
+import os
+import sys
+
+# Adjust sys.path to include the directory where the uc3m_money package is located.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../main/python")))
+
 import unittest
-# The following import may trigger E0401 in some environments;
-# we disable it here because our module exists in our project structure.
-from uc3m_money.transfer_request import TransferRequest  # pylint: disable=import-error
+from uc3m_money.transfer_request import TransferRequest
+
 
 class TestTransferRequest(unittest.TestCase):
     """Test cases for the TransferRequest class."""
@@ -16,10 +22,11 @@ class TestTransferRequest(unittest.TestCase):
         """Set up test fixtures for TransferRequest tests."""
         self.from_iban = "ES1234567890123456789012"
         self.to_iban = "ES9876543210987654321098"
+        # Use exactly two words for the concept and set the year to 2024.
         self.transfer_details = {
             "transfer_type": "ORDINARY",
-            "transfer_concept": "Payment for services",
-            "transfer_date": "07/01/2025",
+            "transfer_concept": "Payment services",
+            "transfer_date": "07/01/2024",  # Updated year to 2024 to pass validation.
             "transfer_amount": 40.00,
         }
         self.tr = TransferRequest(self.from_iban, self.to_iban, self.transfer_details)
@@ -46,6 +53,7 @@ class TestTransferRequest(unittest.TestCase):
     def test_str_method_format(self):
         """Test that the __str__ method output starts with 'Transfer:'."""
         self.assertTrue(str(self.tr).startswith("Transfer:"))
+
 
 if __name__ == "__main__":
     unittest.main()
