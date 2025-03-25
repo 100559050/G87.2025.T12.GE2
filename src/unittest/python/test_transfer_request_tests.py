@@ -66,6 +66,14 @@ class TestTransferRequest(unittest.TestCase):
         self.assertEqual(len(tr.transfer_code), 32)
         self.assertTrue(str(tr).startswith("Transfer:"))
 
+    def test_invalid_transfer_type_not_string(self):
+        """Test that a non-string transfer_type raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_type"] = 123
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("transfer_type must be a string", str(cm.exception))
+
     # IBAN Validation Tests
     def test_invalid_from_iban_not_string(self):
         """Test that a non-string from_iban raises an exception."""
@@ -112,6 +120,14 @@ class TestTransferRequest(unittest.TestCase):
         self.assertIn("transfer_type must be ORDINARY, URGENT, or IMMEDIATE", str(cm.exception))
 
     # Transfer Concept Validation
+    def test_invalid_transfer_concept_not_string(self):
+        """Test that a non-string transfer_concept raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_concept"] = 12345
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("transfer_concept must be a string", str(cm.exception))
+
     def test_invalid_transfer_concept_one_word(self):
         """Test that a transfer_concept with only one word raises an exception."""
         details = self.valid_details.copy()
@@ -159,6 +175,14 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_date must be in DD/MM/YYYY format", str(cm.exception))
 
+    def test_invalid_transfer_date_not_string(self):
+        """Test that a non-string transfer_date raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_date"] = 20250325
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("transfer_date must be a string", str(cm.exception))
+
     def test_invalid_transfer_date_year(self):
         """Test that a transfer_date with a year outside allowed range raises an exception."""
         details = self.valid_details.copy()
@@ -167,7 +191,47 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("Year must be between 2025 and 2050", str(cm.exception))
 
+    def test_invalid_transfer_date_day_zero(self):
+        """Test that a transfer_date with a day of 00 raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_date"] = "00/01/2025"
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("Day must be between 1 and 31", str(cm.exception))
+
+    def test_invalid_transfer_date_month_thirteen(self):
+        """Test that a transfer_date with a month of 13 raises an exception"""
+        details = self.valid_details.copy()
+        details["transfer_date"] = "07/13/2025"
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("Month must be between 1 and 12", str(cm.exception))
+
+    def test_invalid_transfer_date_day_high(self):
+        """Test that a transfer_date with a day of 32 raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_date"] = "32/01/2025"  # valid month, invalid day
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("Day must be between 1 and 31", str(cm.exception))
+
+    def test_invalid_transfer_date_month_low(self):
+        """Test that a transfer_date with a month of 00 raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_date"] = "07/00/2025"  # valid day, invalid month
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("Month must be between 1 and 12", str(cm.exception))
+
     # Transfer Amount Validation
+    def test_invalid_transfer_amount_not_float(self):
+        """Test that a non-float transfer_amount raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_amount"] = "100.00"
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("transfer_amount must be a float", str(cm.exception))
+
     def test_invalid_transfer_amount_low(self):
         """Test that a transfer_amount lower than 10.00 raises an exception."""
         details = self.valid_details.copy()
@@ -200,6 +264,55 @@ class TestTransferRequest(unittest.TestCase):
         with self.assertRaises(AccountManagementException) as cm:
             tr.save_to_file(self.test_file)
         self.assertIn("Duplicate transfer detected", str(cm.exception))
+
+    def test_from_iban_getter_and_setter(self):
+        """Test getter and setter for from_iban."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.from_iban, self.valid_from_iban)
+        new_iban = "ES1111222233334444555566"
+        tr.from_iban = new_iban
+        self.assertEqual(tr.from_iban, new_iban)
+
+    def test_to_iban_getter_and_setter(self):
+        """Test getter and setter for to_iban."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.to_iban, self.valid_to_iban)
+        new_iban = "ES9999888877776666555544"
+        tr.to_iban = new_iban
+        self.assertEqual(tr.to_iban, new_iban)
+
+    def test_transfer_type_getter_and_setter(self):
+        """Test getter and setter for transfer_type."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.transfer_type, "ORDINARY")
+        tr.transfer_type = "URGENT"
+        self.assertEqual(tr.transfer_type, "URGENT")
+
+    def test_transfer_amount_getter_and_setter(self):
+        """Test getter and setter for transfer_amount."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.transfer_amount, 40.00)
+        tr.transfer_amount = 1000.00
+        self.assertEqual(tr.transfer_amount, 1000.00)
+
+    def test_transfer_concept_getter_and_setter(self):
+        """Test getter and setter for transfer_concept."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.transfer_concept, "Payment services")
+        tr.transfer_concept = "Service Charge"
+        self.assertEqual(tr.transfer_concept, "Service Charge")
+
+    def test_transfer_date_getter_and_setter(self):
+        """Test getter and setter for transfer_date."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertEqual(tr.transfer_date, "07/01/2025")
+        tr.transfer_date = "08/01/2025"
+        self.assertEqual(tr.transfer_date, "08/01/2025")
+
+    def test_time_stamp_property(self):
+        """Test that time_stamp returns a float timestamp."""
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
+        self.assertIsInstance(tr.time_stamp, float)
 
 if __name__ == "__main__":
     unittest.main()
