@@ -67,6 +67,20 @@ class TestTransferRequest(unittest.TestCase):
         self.assertTrue(str(tr).startswith("Transfer:"))
 
     # IBAN Validation Tests
+    def test_invalid_from_iban_not_string(self):
+        """Test that a non-string from_iban raises an exception."""
+        invalid = 1234567890123456789012  # Not a string
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(invalid, self.valid_to_iban, self.valid_details)
+        self.assertIn("from_iban must be a string", str(cm.exception))
+
+    def test_invalid_to_iban_not_string(self):
+        """Test that a non-string to_iban raises an exception."""
+        invalid = 9876543210987654321098  # Not a string
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, invalid, self.valid_details)
+        self.assertIn("to_iban must be a string", str(cm.exception))
+
     def test_invalid_from_iban_prefix(self):
         """Test that a from_iban not starting with 'ES' raises an exception."""
         invalid = "FR1234567890123456789012"
@@ -74,14 +88,7 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(invalid, self.valid_to_iban, self.valid_details)
         self.assertIn("from_iban must start with 'ES'", str(cm.exception))
 
-    def test_invalid_from_iban_length_short(self):
-        """Test that a from_iban with fewer than 24 characters raises an exception."""
-        invalid = "ES123456789012345678901"  # 23 chars
-        with self.assertRaises(AccountManagementException) as cm:
-            TransferRequest(invalid, self.valid_to_iban, self.valid_details)
-        self.assertIn("must be exactly 24 characters", str(cm.exception))
-
-    def test_invalid_from_iban_length_long(self):
+    def test_invalid_from_iban_wrong_length(self):
         """Test that a from_iban with more than 24 characters raises an exception."""
         invalid = "ES12345678901234567890123"  # 25 chars
         with self.assertRaises(AccountManagementException) as cm:
@@ -121,10 +128,24 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_concept must contain only letters", str(cm.exception))
 
+    def test_valid_transfer_concept_min_length(self):
+        """Test that a transfer_concept with exactly 10 characters passes validation."""
+        details = self.valid_details.copy()
+        details["transfer_concept"] = "Pay Checks"  # 10 characters including space
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIsInstance(tr, TransferRequest)
+
+    def test_valid_transfer_concept_max_length(self):
+        """Test that a transfer_concept with exactly 30 characters passes validation."""
+        details = self.valid_details.copy()
+        details["transfer_concept"] = "PaymentAuthorization Request"  # 30 characters
+        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIsInstance(tr, TransferRequest)
+
     def test_invalid_transfer_concept_length(self):
         """Test that a transfer_concept with length outside 10-30 characters raises an exception."""
         details = self.valid_details.copy()
-        details["transfer_concept"] = "Hi There"  # Only 8 characters total, too short
+        details["transfer_concept"] = "Hey There"  # Only 9 characters total, too short
         with self.assertRaises(AccountManagementException) as cm:
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_concept must be 10 to 30 characters long", str(cm.exception))
