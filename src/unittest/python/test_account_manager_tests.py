@@ -2,7 +2,7 @@
 """Tests for the AccountManager functionality.
 
 This module tests the AccountManager class located in:
-src/main/python/uc3m_money/transfer_request.py
+src/main/python/uc3m_money/account_manager.py
 
 Test cases cover:
 - IBAN validation (string, prefix "ES", and length = 24).
@@ -131,6 +131,16 @@ class TestAccountManager(unittest.TestCase):
             self.assertEqual(data["IBAN"], self.valid_iban)
             self.assertEqual(data["timestamp"], 1742904000.0)
             self.assertEqual(data["balance"], 500.00)
+
+    def test_balance_file_write_exception(self):
+        """Test that an exception during balance file writing is properly handled."""
+        transactions = [{"IBAN": self.valid_iban, "amount": "100.00"}]
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))):
+            # Patch json.dump to simulate a failure during writing
+            with patch("json.dump", side_effect=OSError("Disk write error")):
+                with self.assertRaises(AccountManagementException) as cm:
+                    AccountManager.calculate_balance(self.valid_iban)
+                self.assertIn("Error writing balance file", str(cm.exception))
 
 if __name__ == "__main__":
     unittest.main()
