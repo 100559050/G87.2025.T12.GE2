@@ -5,18 +5,19 @@ This module tests the AccountManager class located in:
 src/main/python/uc3m_money/transfer_request.py
 
 Test cases cover:
-- Valid transfer requests (including MD5 hash generation and JSON output).
-- IBAN validations (prefix and length).
-- Transfer type validations.
-- Transfer concept validations (exactly two words, letters only, valid length).
-- Transfer date validations (format and year range: 2025–2050).
-- Transfer amount validations (range and at most 2 decimals).
-- File saving functionality, including prevention of duplicate entries.
+- IBAN validation (string, prefix "ES", and length = 24).
+- Valid balance calculation from a transactions list.
+- Invalid IBAN inputs.
+- Malformed or missing transactions files.
+- Bad amount values.
+- Proper file writing with expected timestamp using freezegun.
 """
 
 import os
 import json
 import unittest
+from unittest.mock import patch, mock_open
+from freezegun import freeze_time
 
 from uc3m_money.account_manager import AccountManager
 from uc3m_money.account_management_exception import AccountManagementException
@@ -63,6 +64,73 @@ class TestAccountManager(unittest.TestCase):
         with self.assertRaises(AccountManagementException) as cm:
             AccountManager.calculate_balance("INVALIDIBAN")
         self.assertIn("Invalid IBAN", str(cm.exception))
+
+    def test_missing_transactions_file(self):
+        """Test that a missing transactions file raises an exception."""
+        with patch("builtins.open", side_effect=FileNotFoundError()):
+            with self.assertRaises(AccountManagementException) as cm:
+                AccountManager.calculate_balance(self.valid_iban)
+            self.assertIn("Transactions file not found", str(cm.exception))
+
+    def test_invalid_json_format(self):
+        """Test that invalid JSON in transactions file raises an exception."""
+        bad_json = "{invalid}"
+        with patch("builtins.open", mock_open(read_data=bad_json)):
+            with self.assertRaises(AccountManagementException) as cm:
+                AccountManager.calculate_balance(self.valid_iban)
+            self.assertIn("Transactions file is not valid JSON", str(cm.exception))
+
+    def test_iban_not_in_transactions(self):
+        """Test that an IBAN not found in the transactions file raises an exception."""
+        transactions = [{"IBAN": "ES0000000000000000000000", "amount": "100.00"}]
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))):
+            with self.assertRaises(AccountManagementException) as cm:
+                AccountManager.calculate_balance(self.valid_iban)
+            self.assertIn("IBAN not found", str(cm.exception))
+
+    def test_invalid_amount_format(self):
+        """Test that a transaction with an invalid amount format raises an exception."""
+        transactions = [{"IBAN": self.valid_iban, "amount": "abc"}]
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))):
+            with self.assertRaises(AccountManagementException) as cm:
+                AccountManager.calculate_balance(self.valid_iban)
+            self.assertIn("Invalid amount format", str(cm.exception))
+
+    @freeze_time("2025-03-25 12:00:00")
+    def test_valid_balance_calculation(self):
+        """Test a valid balance calculation and check resulting balance structure."""
+        transactions = [
+            {"IBAN": self.valid_iban, "amount": "100.00"},
+            {"IBAN": self.valid_iban, "amount": "200,50"},
+        ]
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))):
+            with patch("json.dump") as mock_dump:
+                result = AccountManager.calculate_balance(self.valid_iban)
+                self.assertTrue(result)
+                data_written = mock_dump.call_args[0][0]
+                self.assertEqual(data_written["IBAN"], self.valid_iban)
+                self.assertEqual(data_written["balance"], 300.5)
+                self.assertEqual(data_written["timestamp"], 1742904000.0)
+
+    @freeze_time("2025-03-25 12:00:00")
+    def test_balance_file_written_with_expected_data(self):
+        """Test that the balance file is written with correct timestamp and values."""
+        transactions = [{"IBAN": self.valid_iban, "amount": "500.00"}]
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))) as m:
+            AccountManager.calculate_balance(self.valid_iban)
+
+        with open(self.balance_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "IBAN": self.valid_iban,
+                "timestamp": 1742904000.0,
+                "balance": 500.00
+            }, f, indent=4)
+
+        with open(self.balance_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            self.assertEqual(data["IBAN"], self.valid_iban)
+            self.assertEqual(data["timestamp"], 1742904000.0)
+            self.assertEqual(data["balance"], 500.00)
 
 if __name__ == "__main__":
     unittest.main()

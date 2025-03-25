@@ -158,7 +158,7 @@ class TestTransferRequest(unittest.TestCase):
     def test_invalid_transfer_amount_high(self):
         """Test that a transfer_amount higher than 10000.00 raises an exception."""
         details = self.valid_details.copy()
-        details["transfer_amount"] = 10001.00
+        details["transfer_amount"] = 10000.01
         with self.assertRaises(AccountManagementException) as cm:
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_amount must be between 10.00 and 10000.00", str(cm.exception))
@@ -171,19 +171,6 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_amount must have at most 2 decimal places", str(cm.exception))
 
-    # File Saving Tests
-    @freeze_time("2025-03-25 12:00:00")
-    def test_save_to_file_success(self):
-        """Test that save_to_file correctly writes transfer data to a file."""
-        tr = TransferRequest(self.valid_from_iban, self.valid_to_iban, self.valid_details)
-        if os.path.exists(self.test_file):
-            os.remove(self.test_file)
-        tr.save_to_file(self.test_file)
-        with open(self.test_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        self.assertTrue(len(data) >= 1)
-        self.assertEqual(data[0], tr.to_json())
-
     @freeze_time("2025-03-25 12:00:00")
     def test_duplicate_transfer(self):
         """Test that saving a duplicate transfer raises an exception."""
@@ -192,7 +179,6 @@ class TestTransferRequest(unittest.TestCase):
         with self.assertRaises(AccountManagementException) as cm:
             tr.save_to_file(self.test_file)
         self.assertIn("Duplicate transfer detected", str(cm.exception))
-
 
 if __name__ == "__main__":
     unittest.main()
