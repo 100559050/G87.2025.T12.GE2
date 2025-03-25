@@ -44,8 +44,10 @@ class AccountDeposit:
             raise AccountManagementException("deposit_amount must be a float.")
         if not 10.00 <= self.__deposit_amount <= 10000.00:
             raise AccountManagementException("deposit_amount must be between 10.00 and 10000.00.")
-        if len(f"{self.__deposit_amount:.2f}".split(".")[1]) > 2:
-            raise AccountManagementException("deposit_amount must have at most 2 decimal places.")
+        if "." in str(self.__deposit_amount):
+            decimal_part = str(self.__deposit_amount).split(".")[1]
+            if len(decimal_part) > 2:
+                raise AccountManagementException("deposit_amount must have at most 2 decimal places.")
 
     def save_to_file(self, file_path="deposits.json"):
         """
@@ -109,7 +111,6 @@ class AccountDeposit:
     @deposit_date.setter
     def deposit_date( self, value ):
         self.__deposit_date = value
-
 
     @property
     def deposit_signature( self ):

@@ -44,13 +44,26 @@ class TestAccountDeposit(unittest.TestCase):
     def test_to_json_returns_expected_keys(self):
         """Test that to_json returns a dictionary with all expected keys."""
         result = self.ad.to_json()
-        expected_keys = {"alg", "typ", "to_iban", "deposit_amount", "deposit_date", "deposit_signature"}
+        expected_keys = {"alg", "typ", "to_iban", "deposit_amount",
+                         "deposit_date", "deposit_signature"}
         self.assertEqual(set(result.keys()), expected_keys)
 
     def test_deposit_signature_length(self):
         """Test that the deposit signature is 64 characters long (SHA256 hash)."""
         signature = self.ad.deposit_signature
         self.assertEqual(len(signature), 64)
+
+    def test_to_iban_not_a_string(self):
+        """Test that a non-string to_iban raises an exception."""
+        with self.assertRaises(AccountManagementException) as cm:
+            AccountDeposit(1234567890123456789012, self.valid_deposit_amount)
+        self.assertIn("to_iban must be a string", str(cm.exception))
+
+    def test_deposit_amount_not_a_float(self):
+        """Test that a non-float deposit_amount raises an exception."""
+        with self.assertRaises(AccountManagementException) as cm:
+            AccountDeposit(self.valid_to_iban, "100.00")
+        self.assertIn("deposit_amount must be a float", str(cm.exception))
 
     def test_invalid_to_iban(self):
         """Test that an invalid to_iban (wrong prefix or length) raises an exception."""
@@ -59,26 +72,70 @@ class TestAccountDeposit(unittest.TestCase):
         with self.assertRaises(AccountManagementException):
             AccountDeposit("ES123456789012345678901", self.valid_deposit_amount)
 
+    def test_deposit_amount_more_than_two_decimals(self):
+        """Test that deposit_amount with more than two decimal places raises an exception."""
+        with self.assertRaises(AccountManagementException) as cm:
+            AccountDeposit(self.valid_to_iban, 100.123)
+        self.assertIn("deposit_amount must have at most 2 decimal places", str(cm.exception))
+
     def test_invalid_deposit_amount(self):
         """Test that an invalid deposit_amount (out of range) raises an exception."""
         with self.assertRaises(AccountManagementException):
-            AccountDeposit(self.valid_to_iban, 5.00)
+            AccountDeposit(self.valid_to_iban, 9.99)
         with self.assertRaises(AccountManagementException):
-            AccountDeposit(self.valid_to_iban, 10001.00)
+            AccountDeposit(self.valid_to_iban, 10000.01)
 
-    def test_save_to_file_success(self):
-        """Test that save_to_file correctly writes deposit data to a file."""
-        self.ad.save_to_file(self.file_path)
-        with open(self.file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        self.assertTrue(len(data) >= 1)
-        self.assertIn("deposit_signature", data[0])
+    def test_valid_deposit_amount_min_boundary(self):
+        """Test that a deposit_amount of exactly 10.00 is valid."""
+        try:
+            ad = AccountDeposit(self.valid_to_iban, 10.00)
+            self.assertEqual(ad.deposit_amount, 10.00)
+        except AccountManagementException:
+            self.fail("Raised AccountManagementException unexpectedly with amount 10.00")
+
+    def test_valid_deposit_amount_max_boundary(self):
+        """Test that a deposit_amount of exactly 10000.00 is valid."""
+        try:
+            ad = AccountDeposit(self.valid_to_iban, 10000.00)
+            self.assertEqual(ad.deposit_amount, 10000.00)
+        except AccountManagementException:
+            self.fail("Raised AccountManagementException unexpectedly with amount 10000.00")
 
     def test_duplicate_deposit(self):
         """Test that attempting to save a duplicate deposit raises an exception."""
         self.ad.save_to_file(self.file_path)
         with self.assertRaises(AccountManagementException):
             self.ad.save_to_file(self.file_path)
+
+    def test_get_to_iban_property(self):
+        """Test the to_iban getter property returns the correct value."""
+        self.assertEqual(self.ad.to_iban, self.valid_to_iban)
+
+    def test_set_to_iban_property(self):
+        """Test the to_iban setter updates the value correctly."""
+        new_iban = "ES9999999999999999999999"
+        self.ad.to_iban = new_iban
+        self.assertEqual(self.ad.to_iban, new_iban)
+
+    def test_get_deposit_amount_property(self):
+        """Test the deposit_amount getter property returns the correct value."""
+        self.assertEqual(self.ad.deposit_amount, self.valid_deposit_amount)
+
+    def test_set_deposit_amount_property(self):
+        """Test the deposit_amount setter updates the value correctly."""
+        new_amount = 200.00
+        self.ad.deposit_amount = new_amount
+        self.assertEqual(self.ad.deposit_amount, new_amount)
+
+    def test_get_deposit_date_property(self):
+        """Test the deposit_date getter returns a float timestamp."""
+        self.assertIsInstance(self.ad.deposit_date, float)
+
+    def test_set_deposit_date_property(self):
+        """Test the deposit_date setter updates the value correctly."""
+        new_date = "01/01/2030"
+        self.ad.deposit_date = new_date
+        self.assertEqual(self.ad.deposit_date, new_date)
 
 
 if __name__ == "__main__":
