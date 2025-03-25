@@ -116,7 +116,7 @@ class TestAccountManager(unittest.TestCase):
     def test_balance_file_written_with_expected_data(self):
         """Test that the balance file is written with correct timestamp and values."""
         transactions = [{"IBAN": self.valid_iban, "amount": "500.00"}]
-        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))) as m:
+        with patch("builtins.open", mock_open(read_data=json.dumps(transactions))):
             AccountManager.calculate_balance(self.valid_iban)
 
         with open(self.balance_file, "w", encoding="utf-8") as f:

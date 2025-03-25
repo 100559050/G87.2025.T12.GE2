@@ -47,7 +47,7 @@ class AccountDeposit:
         if "." in str(self.__deposit_amount):
             decimal_part = str(self.__deposit_amount).split(".")[1]
             if len(decimal_part) > 2:
-                raise AccountManagementException("deposit_amount must have at most 2 decimal places.")
+                raise AccountManagementException("deposit_amount must have at most 2 decimals.")
 
     def save_to_file(self, file_path="deposits.json"):
         """

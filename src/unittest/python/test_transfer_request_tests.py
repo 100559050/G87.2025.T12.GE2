@@ -15,7 +15,6 @@ Test cases cover:
 """
 
 import os
-import json
 import unittest
 from freezegun import freeze_time
 
@@ -23,8 +22,10 @@ from uc3m_money.transfer_request import TransferRequest
 from uc3m_money.account_management_exception import AccountManagementException
 
 
-class TestTransferRequest(unittest.TestCase):
-    """Test cases for the TransferRequest class."""
+class BaseTransferRequestTest(unittest.TestCase):
+    """
+    Base class providing setUp and tearDown for all TransferRequest tests.
+    """
 
     def setUp(self):
         """Set up valid test fixtures."""
@@ -46,6 +47,10 @@ class TestTransferRequest(unittest.TestCase):
         if os.path.exists(self.test_file):
             os.remove(self.test_file)
 
+class TestTransferRequestValid(BaseTransferRequestTest):
+    """
+    Tests a fully valid transfer request scenario.
+    """
     @freeze_time("2025-03-25 12:00:00")
     def test_valid_transfer_request(self):
         """Test that a valid transfer request is created successfully."""
@@ -66,14 +71,10 @@ class TestTransferRequest(unittest.TestCase):
         self.assertEqual(len(tr.transfer_code), 32)
         self.assertTrue(str(tr).startswith("Transfer:"))
 
-    def test_invalid_transfer_type_not_string(self):
-        """Test that a non-string transfer_type raises an exception."""
-        details = self.valid_details.copy()
-        details["transfer_type"] = 123
-        with self.assertRaises(AccountManagementException) as cm:
-            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
-        self.assertIn("transfer_type must be a string", str(cm.exception))
-
+class TestTransferRequestIbanValidation(BaseTransferRequestTest):
+    """
+    Tests for IBAN validation (type, prefix, length).
+    """
     # IBAN Validation Tests
     def test_invalid_from_iban_not_string(self):
         """Test that a non-string from_iban raises an exception."""
@@ -110,6 +111,10 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, invalid, self.valid_details)
         self.assertIn("to_iban must start with 'ES'", str(cm.exception))
 
+class TestTransferRequestTypeValidation(BaseTransferRequestTest):
+    """
+    Tests for transfer_type validation (must be string, must be ORDINARY/URGENT/IMMEDIATE).
+    """
     # Transfer Type Validation
     def test_invalid_transfer_type(self):
         """Test that an invalid transfer_type raises an exception."""
@@ -119,6 +124,18 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_type must be ORDINARY, URGENT, or IMMEDIATE", str(cm.exception))
 
+    def test_invalid_transfer_type_not_string(self):
+        """Test that a non-string transfer_type raises an exception."""
+        details = self.valid_details.copy()
+        details["transfer_type"] = 123
+        with self.assertRaises(AccountManagementException) as cm:
+            TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
+        self.assertIn("transfer_type must be a string", str(cm.exception))
+
+class TestTransferRequestConceptValidation(BaseTransferRequestTest):
+    """
+    Tests for transfer_concept validation (must be string, two words, alpha, 10-30 chars).
+    """
     # Transfer Concept Validation
     def test_invalid_transfer_concept_not_string(self):
         """Test that a non-string transfer_concept raises an exception."""
@@ -166,6 +183,11 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_concept must be 10 to 30 characters long", str(cm.exception))
 
+class TestTransferRequestDateValidation(BaseTransferRequestTest):
+    """
+    Tests for transfer_date validation
+    (must be string, valid format, year=2025-2050, day/month range).
+    """
     # Transfer Date Validation
     def test_invalid_transfer_date_format(self):
         """Test that an improperly formatted transfer_date raises an exception."""
@@ -223,6 +245,10 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("Month must be between 1 and 12", str(cm.exception))
 
+class TestTransferRequestAmountValidation(BaseTransferRequestTest):
+    """
+    Tests for transfer_amount validation (must be float, 10.00 <= amount <= 10000.00, <=2 decimals).
+    """
     # Transfer Amount Validation
     def test_invalid_transfer_amount_not_float(self):
         """Test that a non-float transfer_amount raises an exception."""
@@ -256,6 +282,10 @@ class TestTransferRequest(unittest.TestCase):
             TransferRequest(self.valid_from_iban, self.valid_to_iban, details)
         self.assertIn("transfer_amount must have at most 2 decimal places", str(cm.exception))
 
+class TestTransferRequestFileAndProperties(BaseTransferRequestTest):
+    """
+    Tests for duplicate saving, plus property getters and setters.
+    """
     @freeze_time("2025-03-25 12:00:00")
     def test_duplicate_transfer(self):
         """Test that saving a duplicate transfer raises an exception."""

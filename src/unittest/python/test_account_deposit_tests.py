@@ -12,15 +12,12 @@ For example, from your project root run:
 
 import os
 import sys
-import json  # Added import for json
 import unittest
-
-# Adjust sys.path so that the uc3m_money package is found.
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../main/python")))
-
 from uc3m_money.account_deposit import AccountDeposit  # pylint: disable=import-error
 from uc3m_money.account_management_exception import AccountManagementException  # pylint: disable=import-error
 
+# Adjust sys.path so that the uc3m_money package is found.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../main/python")))
 
 class TestAccountDeposit(unittest.TestCase):
     """Test cases for the AccountDeposit class."""
@@ -76,7 +73,7 @@ class TestAccountDeposit(unittest.TestCase):
         """Test that deposit_amount with more than two decimal places raises an exception."""
         with self.assertRaises(AccountManagementException) as cm:
             AccountDeposit(self.valid_to_iban, 100.123)
-        self.assertIn("deposit_amount must have at most 2 decimal places", str(cm.exception))
+        self.assertIn("deposit_amount must have at most 2 decimals", str(cm.exception))
 
     def test_invalid_deposit_amount(self):
         """Test that an invalid deposit_amount (out of range) raises an exception."""
